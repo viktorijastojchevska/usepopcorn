@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const tempMovieData = [
   {
@@ -49,23 +49,91 @@ const tempWatchedData = [
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
+
+const KEY = "cf8d5c1b";
+
 export default function App() {
+  const [movies, setMovies] = useState(tempMovieData);
+  const [watched, setWatched] = useState(tempWatchedData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("interstellar");
+
+  useEffect(
+    function () {
+      async function fetchMovies() {
+        try {
+          setIsLoading(true);
+          setError("");
+          const res = await fetch(
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+          );
+
+          if (!res.ok) {
+            throw new Error("Something went wrong with fetching movies");
+          }
+
+          const data = await res.json();
+          if (data.Response === "False") {
+            throw new Error("Movie not found");
+          }
+
+          setMovies(data.Search);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
+      if (query.length < 3) {
+        setMovies([]);
+        setError("");
+        return;
+      }
+
+      fetchMovies();
+    },
+    [query]
+  );
   return (
     <>
-      <Navbar />;
-      <Main />
+      <Navbar>
+        <Logo />
+        <SearchBar query={query} setQuery={setQuery} />
+        <NumResults movies={movies} />
+      </Navbar>
+
+      <Main>
+        <Box>
+          {!isLoading && !error && <MoviesList movies={movies} />}
+          {error && <ErrorMessage message={error} />}
+          {isLoading && <Loader />}
+        </Box>
+
+        <Box>
+          <WatchedMoviesSummary watched={watched} />
+          <WatchedMoviewList watched={watched} />
+        </Box>
+      </Main>
     </>
   );
 }
 
-function Navbar() {
+function Loader() {
+  return <p className="loader">Loading...</p>;
+}
+
+function ErrorMessage({ message }) {
   return (
-    <nav className="nav-bar">
-      <Logo />
-      <SearchBar />
-      <NumResults />
-    </nav>
+    <p className="error">
+      <span>⛔️</span> {message}
+    </p>
   );
+}
+
+function Navbar({ children }) {
+  return <nav className="nav-bar">{children}</nav>;
 }
 
 function Logo() {
@@ -77,9 +145,7 @@ function Logo() {
   );
 }
 
-function SearchBar() {
-  const [query, setQuery] = useState("");
-
+function SearchBar({ query, setQuery }) {
   return (
     <input
       className="search"
@@ -91,42 +157,32 @@ function SearchBar() {
   );
 }
 
-function NumResults() {
+function NumResults({ movies }) {
   return (
     <p className="num-results">
-      Found <strong>X</strong> results
+      Found <strong>{movies.length}</strong> results
     </p>
   );
 }
 
-function Main() {
-  return (
-    <main className="main">
-      <MoviesBox />
-      <WatchedBox />
-    </main>
-  );
+function Main({ children }) {
+  return <main className="main">{children}</main>;
 }
 
-function MoviesBox() {
-  const [isOpen1, setIsOpen1] = useState(true);
+function Box({ children }) {
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
     <div className="box">
-      <button
-        className="btn-toggle"
-        onClick={() => setIsOpen1((open) => !open)}
-      >
-        {isOpen1 ? "–" : "+"}
+      <button className="btn-toggle" onClick={() => setIsOpen((open) => !open)}>
+        {isOpen ? "–" : "+"}
       </button>
-      {isOpen1 && <MoviesList />}
+      {isOpen && children}
     </div>
   );
 }
 
-function MoviesList() {
-  const [movies, setMovies] = useState(tempMovieData);
-
+function MoviesList({ movies }) {
   return (
     <ul className="list">
       {movies?.map((movie) => (
@@ -148,28 +204,6 @@ function Movie({ movie }) {
         </p>
       </div>
     </li>
-  );
-}
-
-function WatchedBox() {
-  const [watched, setWatched] = useState(tempWatchedData);
-  const [isOpen2, setIsOpen2] = useState(true);
-
-  return (
-    <div className="box">
-      <button
-        className="btn-toggle"
-        onClick={() => setIsOpen2((open) => !open)}
-      >
-        {isOpen2 ? "–" : "+"}
-      </button>
-      {isOpen2 && (
-        <>
-          <WatchedMoviesSummary watched={watched} />
-          <WatchedMoviewList watched={watched} />
-        </>
-      )}
-    </div>
   );
 }
 
