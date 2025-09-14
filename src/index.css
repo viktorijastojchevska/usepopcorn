@@ -285,8 +285,10 @@ body {
   border-radius: 0.9rem;
   padding: 2rem 2.4rem;
   margin-bottom: 0.8rem;
+  margin-top: 2.8rem;
   font-weight: 600;
   display: flex;
+  justify-self: center;
   flex-direction: column;
   gap: 2.4rem;
 }
