@@ -77,6 +77,7 @@ export default function App() {
             <SelectedMovieDetails
               selectedId={selectedId}
               setSelectedId={setSelectedId}
+              setWatched={setWatched}
             />
           ) : (
             <>
@@ -166,7 +167,7 @@ function MoviesList({ movies, onSelectedMovie }) {
   );
 }
 
-function SelectedMovieDetails({ selectedId, setSelectedId }) {
+function SelectedMovieDetails({ selectedId, setSelectedId, setWatched }) {
   const [movie, setMovie] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -185,6 +186,19 @@ function SelectedMovieDetails({ selectedId, setSelectedId }) {
   function handleCloseMovie() {
     setSelectedId(null);
   }
+
+  function addMovie() {
+    const newWatchedMovie = {
+      imdbID: selectedId,
+      Title: title,
+      Poster: poster,
+      imdbRating: Number(imdbRating),
+      runtime: Number(runtime.split(" ").at(0)),
+    };
+    setWatched((watched) => [...watched, newWatchedMovie]);
+    handleCloseMovie();
+  }
+
   useEffect(() => {
     async function GetSelectedMovie() {
       setIsLoading(true);
@@ -222,6 +236,9 @@ function SelectedMovieDetails({ selectedId, setSelectedId }) {
           </header>
           <div className="rating">
             <StarRating maxRating="10" fontSize="24" />
+            <button className="btn-add" onClick={addMovie}>
+              + Add to list
+            </button>
           </div>
           <section>
             <div className="details-main">
