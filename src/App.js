@@ -8,11 +8,14 @@ const KEY = "cf8d5c1b";
 
 export default function App() {
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const [watched, setWatched] = useState(function () {
+    const storedWatchedMovies = localStorage.getItem("watched");
+    return storedWatchedMovies ? JSON.parse(storedWatchedMovies) : [];
+  });
 
   function hadleSelectedMovie(id) {
     setSelectedId((selectedId) => (selectedId === id ? null : id));
@@ -71,6 +74,13 @@ export default function App() {
       };
     },
     [query],
+  );
+
+  useEffect(
+    function () {
+      localStorage.setItem("watched", JSON.stringify(watched));
+    },
+    [watched],
   );
 
   return (
