@@ -1,6 +1,8 @@
-import { useRef, useEffect, useState } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 import StarRating from "./StarRating";
 import { useMovies } from "./useMovies";
+import { useLocalStorageState } from "./useLocalStorageState";
+import { useKey } from "./useKey";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
@@ -11,11 +13,7 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const { movies, isLoading, error } = useMovies(query);
-
-  const [watched, setWatched] = useState(function () {
-    const storedWatchedMovies = localStorage.getItem("watched");
-    return storedWatchedMovies ? JSON.parse(storedWatchedMovies) : [];
-  });
+  const [watched, setWatched] = useLocalStorageState([], "watched");
 
   function hadleSelectedMovie(id) {
     setSelectedId((selectedId) => (selectedId === id ? null : id));
@@ -24,13 +22,6 @@ export default function App() {
   function handleDeleteMovie(id) {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
-
-  useEffect(
-    function () {
-      localStorage.setItem("watched", JSON.stringify(watched));
-    },
-    [watched],
-  );
 
   return (
     <>
@@ -100,24 +91,11 @@ function Logo() {
 function SearchBar({ query, setQuery }) {
   const inputEl = useRef(null);
 
-  useEffect(
-    function () {
-      function handleKeyDown(e) {
-        if (document.activeElement === inputEl.current) return;
-        if (e.code === "Enter") {
-          inputEl.current?.focus();
-          setQuery("");
-        }
-      }
-
-      document.addEventListener("keydown", handleKeyDown);
-
-      return function () {
-        document.removeEventListener("keydown", handleKeyDown);
-      };
-    },
-    [setQuery],
-  );
+  useKey("Enter", function () {
+    if (document.activeElement === inputEl.current) return;
+    inputEl.current?.focus();
+    setQuery("");
+  });
 
   return (
     <input
@@ -172,7 +150,7 @@ function MoviesList({ movies, onSelectedMovie }) {
 
 function SelectedMovieDetails({
   selectedId,
-  onCloseMovie,
+  setSelectedId,
   setWatched,
   watched,
 }) {
@@ -195,22 +173,11 @@ function SelectedMovieDetails({
     Genre: genre,
   } = movie;
 
-  useEffect(
-    function () {
-      function handleKeyDown(e) {
-        if (e.code === "Escape") {
-          onCloseMovie();
-        }
-      }
+  const handleCloseMovie = useCallback(() => {
+    setSelectedId(null);
+  }, [setSelectedId]);
 
-      document.addEventListener("keydown", handleKeyDown);
-
-      return function () {
-        document.removeEventListener("keydown", handleKeyDown);
-      };
-    },
-    [onCloseMovie],
-  );
+  useKey("Escape", handleCloseMovie);
 
   useEffect(
     function () {
@@ -232,7 +199,7 @@ function SelectedMovieDetails({
     };
 
     setWatched((watched) => [...watched, newWatchedMovie]);
-    onCloseMovie();
+    handleCloseMovie();
   }
 
   useEffect(() => {
@@ -272,7 +239,7 @@ function SelectedMovieDetails({
       ) : (
         <>
           <header>
-            <button className="btn-back" onClick={onCloseMovie}>
+            <button className="btn-back" onClick={handleCloseMovie}>
               &larr;
             </button>
             <img src={poster} alt={`Poster of ${title} movie`} />
